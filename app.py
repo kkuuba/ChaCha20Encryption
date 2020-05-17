@@ -1,10 +1,10 @@
 from importlib import import_module
 import os
 from flask import Flask, render_template, Response
-from webcam_services import WebCam
+from webcam_client import WebCamClient
 
 app = Flask(__name__)
-camera = WebCam()
+camera = WebCamClient()
 # TODO add some REST methods to save secret key
 @app.route('/')
 def index():
