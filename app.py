@@ -1,17 +1,19 @@
 from importlib import import_module
 import os
 from flask import Flask, render_template, Response
-from opencv_camera import Camera
+from webcam_services import WebCam
 
 app = Flask(__name__)
-
+camera = WebCam()
+# TODO add some REST methods to save secret key
 @app.route('/')
 def index():
     """Video streaming home page."""
+    
     return render_template('index.html')
 
 
-def gen(camera):
+def gen():
     """Video streaming generator function."""
     while True:
         frame = camera.get_frame()
@@ -22,7 +24,7 @@ def gen(camera):
 @app.route('/video_feed')
 def video_feed():
     """Video streaming route. Put this in the src attribute of an img tag."""
-    return Response(gen(Camera()), mimetype='multipart/x-mixed-replace; boundary=frame')
+    return Response(gen(), mimetype='multipart/x-mixed-replace; boundary=frame')
 
 
 if __name__ == '__main__':
