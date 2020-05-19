@@ -1,7 +1,5 @@
-from importlib import import_module
-import os
 from flask import Flask, render_template, Response
-from webcam_client import WebCamClient
+from web_solution.webcam_client import WebCamClient
 
 app = Flask(__name__)
 camera = WebCamClient()

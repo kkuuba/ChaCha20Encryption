@@ -1,7 +1,6 @@
 import socket
-import json
 from time import sleep
-from webcam_services import WebCam
+from web_solution.webcam_services import WebCam
 
 
 class SocketServer:
