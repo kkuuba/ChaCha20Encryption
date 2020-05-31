@@ -140,7 +140,8 @@ class ChaCha20:
             state[n] = hex(state[n])
             if len(state[n]) == 11: # handle overloading
                 state[n] = state[n][3:]
-            state[n] = state[n][2:] # romove '0x'
+            else:
+                state[n] = state[n][2:] # romove '0x'
             
         return self.add_padding(self.serialize(self.add_padding(state), 64)) 
 
