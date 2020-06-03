@@ -93,14 +93,10 @@ while True:
     server.accept_remote_handshake()
     while True:
         frame = server.rcv_frame()
-
-        # Decryption part
         print("Decryption")
         decrypted = cipher.decryption(frame)
         decrypted = binascii.unhexlify(decrypted.encode('utf8')).decode('utf8')
-
-        # Restore basic array
         frame = pickle.loads(ast.literal_eval(decrypted))
-
-        cv2.imshow('frame', frame)
+        frame = cv2.imdecode(frame, cv2.IMREAD_COLOR)
+        cv2.imshow('.jpg', frame)
         cv2.waitKey(1)

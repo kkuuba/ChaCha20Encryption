@@ -1,5 +1,6 @@
 import binascii
 
+
 class ChaCha20:
     """
     Main class for encryption and decryption with ChaCha20 Encryption Algorithm.
@@ -42,7 +43,7 @@ class ChaCha20:
         b ^= c
         b = self.rotate_left(b, 7)
         return [hex(a), hex(b), hex(c), hex(d)]
-    
+
     def quarter_round_on_the_cha_cha_state(self, chacha_state, a, b, c, d):
         """
         Perform Quarter Round on the ChaCha State operation.
@@ -59,22 +60,22 @@ class ChaCha20:
         chacha_state[b] = y[1]
         chacha_state[c] = y[2]
         chacha_state[d] = y[3]
-        
-        for n in range(len(chacha_state)): 
-            if isinstance(chacha_state[n],str):
-                chacha_state[n]=int(chacha_state[n], 16)
+
+        for n in range(len(chacha_state)):
+            if isinstance(chacha_state[n], str):
+                chacha_state[n] = int(chacha_state[n], 16)
 
         return chacha_state
 
-    def swap_endianness(self, x): 
+    def swap_endianness(self, x):
         """
         Perform swap endianess operation
         :param x: a number to modify
         :return: modified x 
         """
         return (((x << 24) & 0xFF000000) |
-                ((x <<  8) & 0x00FF0000) |
-                ((x >>  8) & 0x0000FF00) |
+                ((x << 8) & 0x00FF0000) |
+                ((x >> 8) & 0x0000FF00) |
                 ((x >> 24) & 0x000000FF))
 
     def serialize(self, string, length_in_bytes):
@@ -85,28 +86,28 @@ class ChaCha20:
         :return: list of serialized elements
         """
         str_list = []
-        for i in range(0,length_in_bytes*2,8):
-            str_list.append(hex(self.swap_endianness(int(string[i:i+8], 16))))
+        for i in range(0, length_in_bytes * 2, 8):
+            str_list.append(hex(self.swap_endianness(int(string[i:i + 8], 16))))
         for n in range(len(str_list)):  # remove '0x' from hex
-            str_list[n] = str_list[n][2:] 
+            str_list[n] = str_list[n][2:]
         return str_list
-    
+
     def add_padding(self, list):
         """
         Make sure each list element is exactly the length of 8 - add padding in case there are some '0's cut off at the beginnig
         :param list: string to serialize
         :return: string formed from joined list elements
         """
-        return ''.join([ i.rjust(8,'0') for i in list])
+        return ''.join([i.rjust(8, '0') for i in list])
 
-    def to_chacha_state(self): 
+    def to_chacha_state(self):
         """
         Form chacha state based on a key, noncce and counter provided in a constructor
         :return: chacha state
         """
         constants = [hex(0x61707865), hex(0x3320646e), hex(0x79622d32), hex(0x6b206574)]
         chacha_state = constants + self.serialize(self.key, 32) + [hex(self.counter)] + self.serialize(self.nonce, 12)
-        for n in range(len(chacha_state)): 
+        for n in range(len(chacha_state)):
             chacha_state[n] = int(chacha_state[n], 16)
         return chacha_state
 
@@ -129,21 +130,21 @@ class ChaCha20:
         Transforms a ChaCha state by running multiple quarter rounds, add the original state to the result and serialize the result
         :return: serialized block 
         """
-        working_state = self.to_chacha_state() 
-        state = self.to_chacha_state() 
-        
-        for n in range(10): 
+        working_state = self.to_chacha_state()
+        state = self.to_chacha_state()
+
+        for n in range(10):
             self.inner_block(working_state)
 
         for n in range(len(working_state)):
-            state[n] += working_state[n]  
+            state[n] += working_state[n]
             state[n] = hex(state[n])
-            if len(state[n]) == 11: # handle overloading
+            if len(state[n]) == 11:  # handle overloading
                 state[n] = state[n][3:]
             else:
-                state[n] = state[n][2:] # romove '0x'
-            
-        return self.add_padding(self.serialize(self.add_padding(state), 64)) 
+                state[n] = state[n][2:]  # romove '0x'
+
+        return self.add_padding(self.serialize(self.add_padding(state), 64))
 
     def encryption(self, plaintext):
         """
@@ -151,20 +152,19 @@ class ChaCha20:
         :param plaintext: text to encrypt
         :return: encrypted text
         """
-        encrypted_message =''
+        encrypted_message = ''
+        key_stream = self.chacha20_block()
+        for j in range(len(plaintext) // 64):
+            block = plaintext[j * 64:(j * 64 + 64)]
+            sunscreen = ''.join(hex(ord(a))[2:].rjust(2, '0') for a in block)  # convert string to string of hex values
+            encrypted_message += ''.join(hex(int(a, 16) ^ int(b, 16))[2:] for a, b in
+                                         zip(sunscreen, key_stream))  # XOR string of hex values with key_stream
 
-        for j in range(len(plaintext)//64):
-            key_stream = self.chacha20_block()
-            block = plaintext[j*64:(j*64+64)]
-            sunscreen = ''.join(hex(ord(a))[2:].rjust(2, '0') for a in block) # convert string to string of hex values
-            encrypted_message +=''.join(hex(int(a,16) ^ int(b,16))[2:] for a,b in zip(sunscreen,key_stream)) # XOR string of hex values with key_stream
-
-        if(len(plaintext)%64 != 0):
-            j = len(plaintext)//64
-            key_stream = self.chacha20_block()
-            block = plaintext[j*64:]
-            sunscreen = ''.join( hex(ord(a))[2:].rjust(2, '0') for a in block)
-            encrypted_message += ''.join(hex(int(a,16) ^ int(b,16))[2:] for a,b in zip(sunscreen,key_stream))
+        if len(plaintext) % 64 != 0:
+            j = len(plaintext) // 64
+            block = plaintext[j * 64:]
+            sunscreen = ''.join(hex(ord(a))[2:].rjust(2, '0') for a in block)
+            encrypted_message += ''.join(hex(int(a, 16) ^ int(b, 16))[2:] for a, b in zip(sunscreen, key_stream))
         return encrypted_message
 
     def decryption(self, ciphertext):
@@ -174,7 +174,7 @@ class ChaCha20:
         :param ciphertext: text to decrypt
         :return: decrypted text
         """
-        encrypted = ''.join(chr(int(ciphertext[i:i+2], 16)) for i in range (0, len(ciphertext), 2))
+        encrypted = ''.join(chr(int(ciphertext[i:i + 2], 16)) for i in range(0, len(ciphertext), 2))
         decipher = self.encryption(encrypted)
         return decipher
 
